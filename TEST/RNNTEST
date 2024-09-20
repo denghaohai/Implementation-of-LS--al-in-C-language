@@ -1,0 +1,47 @@
+import torch
+import torch.nn as nn
+import numpy as np
+
+class TorchRNN(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(TorchRNN, self).__init__()
+        self.layer = nn.RNN(input_size, hidden_size, bias=False, batch_first=True)
+
+    def forward(self, x):
+            return self.layer(x)
+
+x = np.array([[1,2,3],
+              [3,4,5],
+              [5,6,7]])
+
+print(x)
+
+hidden_size=4
+
+torch_model = TorchRNN(3, hidden_size)
+
+w_ih = torch_model.state_dict()["layer.weight_ih_l0"]
+w_hh = torch_model.state_dict()["layer.weight_hh_l0"]
+
+class DiyModel:
+    def __init__(self, w_ih, w_hh, hidden_size):
+        self.w_ih = w_ih
+        self.w_hh = w_hh
+        self.hidden_size = hidden_size
+
+    def forward(self, x):
+        ht = np.zeros((self.hidden_size))
+        output = []
+        for xt in x:
+            ux = np.dot(self.w_ih, xt)
+            wx = np.dot(self.w_hh, ht)
+            ht_next = np.tanh(ux + wx)
+            output.append(ht_next)
+            ht = ht_next
+        return  np.array(output), ht
+
+torch_x = torch.FloatTensor([x])
+print(torch_x)
+output, h = torch_model.forward(torch_x)
+diy_model = DiyModel(w_ih, w_hh, hidden_size)
+diy_output, diy_h = diy_model.forward(torch_x)
